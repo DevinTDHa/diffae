@@ -28,6 +28,7 @@ class ScheduleSampler(ABC):
     However, subclasses may override sample() to change how the resampled
     terms are reweighted, allowing for actual changes in the objective.
     """
+
     @abstractmethod
     def weights(self):
         """
@@ -48,7 +49,7 @@ class ScheduleSampler(ABC):
         """
         w = self.weights()
         p = w / np.sum(w)
-        indices_np = np.random.choice(len(p), size=(batch_size, ), p=p)
+        indices_np = np.random.choice(len(p), size=(batch_size,), p=p)
         indices = th.from_numpy(indices_np).long().to(device)
         weights_np = 1 / (len(p) * p[indices_np])
         weights = th.from_numpy(weights_np).float().to(device)

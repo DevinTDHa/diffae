@@ -4,12 +4,12 @@ from torch import nn
 
 class TrainMode(Enum):
     # manipulate mode = training the classifier
-    manipulate = 'manipulate'
+    manipulate = "manipulate"
     # default trainin mode!
-    diffusion = 'diffusion'
+    diffusion = "diffusion"
     # default latent training mode!
     # fitting the a DDPM to a given latent
-    latent_diffusion = 'latentdiffusion'
+    latent_diffusion = "latentdiffusion"
 
     def is_manipulate(self):
         return self in [
@@ -52,11 +52,12 @@ class ManipulateMode(Enum):
     """
     how to train the classifier to manipulate
     """
+
     # train on whole celeba attr dataset
-    celebahq_all = 'celebahq_all'
+    celebahq_all = "celebahq_all"
     # celeba with D2C's crop
-    d2c_fewshot = 'd2cfewshot'
-    d2c_fewshot_allneg = 'd2cfewshotallneg'
+    d2c_fewshot = "d2cfewshot"
+    d2c_fewshot_allneg = "d2cfewshotallneg"
 
     def is_celeba_attr(self):
         return self in [
@@ -89,9 +90,9 @@ class ModelType(Enum):
     """
 
     # unconditional ddpm
-    ddpm = 'ddpm'
+    ddpm = "ddpm"
     # autoencoding ddpm cannot do unconditional generation
-    autoencoder = 'autoencoder'
+    autoencoder = "autoencoder"
 
     def has_autoenc(self):
         return self in [
@@ -107,8 +108,8 @@ class ModelName(Enum):
     List of all supported model classes
     """
 
-    beatgans_ddpm = 'beatgans_ddpm'
-    beatgans_autoenc = 'beatgans_autoenc'
+    beatgans_ddpm = "beatgans_ddpm"
+    beatgans_autoenc = "beatgans_autoenc"
 
 
 class ModelMeanType(Enum):
@@ -116,7 +117,7 @@ class ModelMeanType(Enum):
     Which type of output the model predicts.
     """
 
-    eps = 'eps'  # the model predicts epsilon
+    eps = "eps"  # the model predicts epsilon
 
 
 class ModelVarType(Enum):
@@ -128,14 +129,14 @@ class ModelVarType(Enum):
     """
 
     # posterior beta_t
-    fixed_small = 'fixed_small'
+    fixed_small = "fixed_small"
     # beta_t
-    fixed_large = 'fixed_large'
+    fixed_large = "fixed_large"
 
 
 class LossType(Enum):
-    mse = 'mse'  # use raw MSE loss (and KL when learning variances)
-    l1 = 'l1'
+    mse = "mse"  # use raw MSE loss (and KL when learning variances)
+    l1 = "l1"
 
 
 class GenerativeType(Enum):
@@ -143,21 +144,21 @@ class GenerativeType(Enum):
     How's a sample generated
     """
 
-    ddpm = 'ddpm'
-    ddim = 'ddim'
+    ddpm = "ddpm"
+    ddim = "ddim"
 
 
 class OptimizerType(Enum):
-    adam = 'adam'
-    adamw = 'adamw'
+    adam = "adam"
+    adamw = "adamw"
 
 
 class Activation(Enum):
-    none = 'none'
-    relu = 'relu'
-    lrelu = 'lrelu'
-    silu = 'silu'
-    tanh = 'tanh'
+    none = "none"
+    relu = "relu"
+    lrelu = "lrelu"
+    silu = "silu"
+    tanh = "tanh"
 
     def get_act(self):
         if self == Activation.none:
@@ -175,5 +176,5 @@ class Activation(Enum):
 
 
 class ManipulateLossType(Enum):
-    bce = 'bce'
-    mse = 'mse'
+    bce = "bce"
+    mse = "mse"

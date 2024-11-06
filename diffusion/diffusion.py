@@ -26,7 +26,7 @@ def space_timesteps(num_timesteps, section_counts):
     """
     if isinstance(section_counts, str):
         if section_counts.startswith("ddim"):
-            desired_count = int(section_counts[len("ddim"):])
+            desired_count = int(section_counts[len("ddim") :])
             for i in range(1, num_timesteps):
                 if len(range(0, num_timesteps, i)) == desired_count:
                     return set(range(0, num_timesteps, i))
@@ -42,7 +42,8 @@ def space_timesteps(num_timesteps, section_counts):
         size = size_per + (1 if i < extra else 0)
         if size < section_count:
             raise ValueError(
-                f"cannot divide section of {size} steps into {section_count}")
+                f"cannot divide section of {size} steps into {section_count}"
+            )
         if section_count <= 1:
             frac_stride = 1
         else:
@@ -73,6 +74,7 @@ class SpacedDiffusionBeatGans(GaussianDiffusionBeatGans):
                           original diffusion process to retain.
     :param kwargs: the kwargs to create the base diffusion process.
     """
+
     def __init__(self, conf: SpacedDiffusionBeatGansConfig):
         self.conf = conf
         self.use_timesteps = set(conf.use_timesteps)
@@ -92,27 +94,28 @@ class SpacedDiffusionBeatGans(GaussianDiffusionBeatGans):
         conf.betas = np.array(new_betas)
         super().__init__(conf)
 
-    def p_mean_variance(self, model: Model, *args, **kwargs):  # pylint: disable=signature-differs
-        return super().p_mean_variance(self._wrap_model(model), *args,
-                                       **kwargs)
+    def p_mean_variance(
+        self, model: Model, *args, **kwargs
+    ):  # pylint: disable=signature-differs
+        return super().p_mean_variance(self._wrap_model(model), *args, **kwargs)
 
-    def training_losses(self, model: Model, *args, **kwargs):  # pylint: disable=signature-differs
-        return super().training_losses(self._wrap_model(model), *args,
-                                       **kwargs)
+    def training_losses(
+        self, model: Model, *args, **kwargs
+    ):  # pylint: disable=signature-differs
+        return super().training_losses(self._wrap_model(model), *args, **kwargs)
 
     def condition_mean(self, cond_fn, *args, **kwargs):
-        return super().condition_mean(self._wrap_model(cond_fn), *args,
-                                      **kwargs)
+        return super().condition_mean(self._wrap_model(cond_fn), *args, **kwargs)
 
     def condition_score(self, cond_fn, *args, **kwargs):
-        return super().condition_score(self._wrap_model(cond_fn), *args,
-                                       **kwargs)
+        return super().condition_score(self._wrap_model(cond_fn), *args, **kwargs)
 
     def _wrap_model(self, model: Model):
         if isinstance(model, _WrappedModel):
             return model
-        return _WrappedModel(model, self.timestep_map, self.rescale_timesteps,
-                             self.original_num_steps)
+        return _WrappedModel(
+            model, self.timestep_map, self.rescale_timesteps, self.original_num_steps
+        )
 
     def _scale_timesteps(self, t):
         # Scaling is done by the wrapped model.
@@ -123,8 +126,8 @@ class _WrappedModel:
     """
     converting the supplied t's to the old t's scales.
     """
-    def __init__(self, model, timestep_map, rescale_timesteps,
-                 original_num_steps):
+
+    def __init__(self, model, timestep_map, rescale_timesteps, original_num_steps):
         self.model = model
         self.timestep_map = timestep_map
         self.rescale_timesteps = rescale_timesteps
@@ -136,9 +139,7 @@ class _WrappedModel:
             t: t's with differrent ranges (can be << T due to smaller eval T) need to be converted to the original t's
             t_cond: the same as t but can be of different values
         """
-        map_tensor = th.tensor(self.timestep_map,
-                               device=t.device,
-                               dtype=t.dtype)
+        map_tensor = th.tensor(self.timestep_map, device=t.device, dtype=t.dtype)
 
         def do(t):
             new_ts = map_tensor[t]

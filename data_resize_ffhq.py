@@ -22,10 +22,9 @@ def resize_and_convert(img, size, resample, quality=100):
     return val
 
 
-def resize_multiple(img,
-                    sizes=(128, 256, 512, 1024),
-                    resample=Image.LANCZOS,
-                    quality=100):
+def resize_multiple(
+    img, sizes=(128, 256, 512, 1024), resample=Image.LANCZOS, quality=100
+):
     imgs = []
 
     for size in sizes:
@@ -43,18 +42,14 @@ def resize_worker(img_file, sizes, resample):
     return i, idx, out
 
 
-def prepare(env,
-            paths,
-            n_worker,
-            sizes=(128, 256, 512, 1024),
-            resample=Image.LANCZOS):
+def prepare(env, paths, n_worker, sizes=(128, 256, 512, 1024), resample=Image.LANCZOS):
     resize_fn = partial(resize_worker, sizes=sizes, resample=resample)
 
     # index = filename in int
     indexs = []
     for each in paths:
         file = os.path.basename(each)
-        name, ext = file.split('.')
+        name, ext = file.split(".")
         idx = int(name)
         indexs.append(idx)
 
@@ -78,11 +73,9 @@ def prepare(env,
 
 
 class ImageFolder(Dataset):
-    def __init__(self, folder, exts=['jpg']):
+    def __init__(self, folder, exts=["jpg"]):
         super().__init__()
-        self.paths = [
-            p for ext in exts for p in Path(f'{folder}').glob(f'**/*.{ext}')
-        ]
+        self.paths = [p for ext in exts for p in Path(f"{folder}").glob(f"**/*.{ext}")]
 
     def __len__(self):
         return len(self.paths)
@@ -99,15 +92,15 @@ if __name__ == "__main__":
     """
     num_workers = 16
     # original ffhq data path
-    in_path = 'datasets/ffhq'
+    in_path = "datasets/ffhq"
     # target output path
-    out_path = 'datasets/ffhq.lmdb'
+    out_path = "datasets/ffhq.lmdb"
 
     if not os.path.exists(out_path):
         os.makedirs(out_path)
 
     resample_map = {"lanczos": Image.LANCZOS, "bilinear": Image.BILINEAR}
-    resample = resample_map['lanczos']
+    resample = resample_map["lanczos"]
 
     sizes = [256]
 
@@ -115,8 +108,8 @@ if __name__ == "__main__":
 
     # imgset = datasets.ImageFolder(in_path)
     # imgset = ImageFolder(in_path)
-    exts = ['jpg']
-    paths = [p for ext in exts for p in Path(f'{in_path}').glob(f'**/*.{ext}')]
+    exts = ["jpg"]
+    paths = [p for ext in exts for p in Path(f"{in_path}").glob(f"**/*.{ext}")]
     # print(paths[:10])
 
     with lmdb.open(out_path, map_size=1024**4, readahead=False) as env:

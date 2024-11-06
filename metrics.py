@@ -17,12 +17,14 @@ import lpips
 from ssim import ssim
 
 
-def make_subset_loader(conf: TrainConfig,
-                       dataset: Dataset,
-                       batch_size: int,
-                       shuffle: bool,
-                       parallel: bool,
-                       drop_last=True):
+def make_subset_loader(
+    conf: TrainConfig,
+    dataset: Dataset,
+    batch_size: int,
+    shuffle: bool,
+    parallel: bool,
+    drop_last=True,
+):
     dataset = SubsetDataset(dataset, size=conf.eval_num_images)
     if parallel and distributed.is_initialized():
         sampler = DistributedSampler(dataset, shuffle=shuffle)
@@ -37,7 +39,7 @@ def make_subset_loader(conf: TrainConfig,
         num_workers=conf.num_workers,
         pin_memory=True,
         drop_last=drop_last,
-        multiprocessing_context=get_context('fork'),
+        multiprocessing_context=get_context("fork"),
     )
 
 
@@ -56,23 +58,25 @@ def evaluate_lpips(
     Args:
         use_inversed_noise: the noise is also inverted from DDIM
     """
-    lpips_fn = lpips.LPIPS(net='alex').to(device)
-    val_loader = make_subset_loader(conf,
-                                    dataset=val_data,
-                                    batch_size=conf.batch_size_eval,
-                                    shuffle=False,
-                                    parallel=True)
+    lpips_fn = lpips.LPIPS(net="alex").to(device)
+    val_loader = make_subset_loader(
+        conf,
+        dataset=val_data,
+        batch_size=conf.batch_size_eval,
+        shuffle=False,
+        parallel=True,
+    )
 
     model.eval()
     with torch.no_grad():
         scores = {
-            'lpips': [],
-            'mse': [],
-            'ssim': [],
-            'psnr': [],
+            "lpips": [],
+            "mse": [],
+            "ssim": [],
+            "psnr": [],
         }
-        for batch in tqdm(val_loader, desc='lpips'):
-            imgs = batch['img'].to(device)
+        for batch in tqdm(val_loader, desc="lpips"):
+            imgs = batch["img"].to(device)
 
             if use_inverted_noise:
                 # inverse the noise
@@ -82,14 +86,13 @@ def evaluate_lpips(
                     with torch.no_grad():
                         model_kwargs = model.encode(imgs)
                 x_T = sampler.ddim_reverse_sample_loop(
-                    model=model,
-                    x=imgs,
-                    clip_denoised=True,
-                    model_kwargs=model_kwargs)
-                x_T = x_T['sample']
+                    model=model, x=imgs, clip_denoised=True, model_kwargs=model_kwargs
+                )
+                x_T = x_T["sample"]
             else:
-                x_T = torch.randn((len(imgs), 3, conf.img_size, conf.img_size),
-                                  device=device)
+                x_T = torch.randn(
+                    (len(imgs), 3, conf.img_size, conf.img_size), device=device
+                )
 
             if conf.model_type == ModelType.ddpm:
                 # the case where you want to calculate the inversion capability of the DDIM model
@@ -102,12 +105,14 @@ def evaluate_lpips(
                     latent_sampler=latent_sampler,
                 )
             else:
-                pred_imgs = render_condition(conf=conf,
-                                             model=model,
-                                             x_T=x_T,
-                                             x_start=imgs,
-                                             cond=None,
-                                             sampler=sampler)
+                pred_imgs = render_condition(
+                    conf=conf,
+                    model=model,
+                    x_T=x_T,
+                    x_start=imgs,
+                    cond=None,
+                    sampler=sampler,
+                )
             # # returns {'cond', 'cond2'}
             # conds = model.encode(imgs)
             # pred_imgs = sampler.sample(model=model,
@@ -115,19 +120,19 @@ def evaluate_lpips(
             #                            model_kwargs=conds)
 
             # (n, 1, 1, 1) => (n, )
-            scores['lpips'].append(lpips_fn.forward(imgs, pred_imgs).view(-1))
+            scores["lpips"].append(lpips_fn.forward(imgs, pred_imgs).view(-1))
 
             # need to normalize into [0, 1]
             norm_imgs = (imgs + 1) / 2
             norm_pred_imgs = (pred_imgs + 1) / 2
             # (n, )
-            scores['ssim'].append(
-                ssim(norm_imgs, norm_pred_imgs, size_average=False))
+            scores["ssim"].append(ssim(norm_imgs, norm_pred_imgs, size_average=False))
             # (n, )
-            scores['mse'].append(
-                (norm_imgs - norm_pred_imgs).pow(2).mean(dim=[1, 2, 3]))
+            scores["mse"].append(
+                (norm_imgs - norm_pred_imgs).pow(2).mean(dim=[1, 2, 3])
+            )
             # (n, )
-            scores['psnr'].append(psnr(norm_imgs, norm_pred_imgs))
+            scores["psnr"].append(psnr(norm_imgs, norm_pred_imgs))
         # (N, )
         for key in scores.keys():
             scores[key] = torch.cat(scores[key]).float()
@@ -159,9 +164,9 @@ def psnr(img1, img2):
     Args:
         img1: (n, c, h, w)
     """
-    v_max = 1.
+    v_max = 1.0
     # (n,)
-    mse = torch.mean((img1 - img2)**2, dim=[1, 2, 3])
+    mse = torch.mean((img1 - img2) ** 2, dim=[1, 2, 3])
     return 20 * torch.log10(v_max / torch.sqrt(mse))
 
 
@@ -182,16 +187,20 @@ def evaluate_fid(
     if get_rank() == 0:
         # no parallel
         # validation data for a comparing FID
-        val_loader = make_subset_loader(conf,
-                                        dataset=val_data,
-                                        batch_size=conf.batch_size_eval,
-                                        shuffle=False,
-                                        parallel=False)
+        val_loader = make_subset_loader(
+            conf,
+            dataset=val_data,
+            batch_size=conf.batch_size_eval,
+            shuffle=False,
+            parallel=False,
+        )
 
         # put the val images to a directory
-        cache_dir = f'{conf.fid_cache}_{conf.eval_num_images}'
-        if (os.path.exists(cache_dir)
-                and len(os.listdir(cache_dir)) < conf.eval_num_images):
+        cache_dir = f"{conf.fid_cache}_{conf.eval_num_images}"
+        if (
+            os.path.exists(cache_dir)
+            and len(os.listdir(cache_dir)) < conf.eval_num_images
+        ):
             shutil.rmtree(cache_dir)
 
         if not os.path.exists(cache_dir):
@@ -216,14 +225,13 @@ def evaluate_fid(
     model.eval()
     with torch.no_grad():
         if conf.model_type.can_sample():
-            eval_num_images = chunk_size(conf.eval_num_images, rank,
-                                         world_size)
+            eval_num_images = chunk_size(conf.eval_num_images, rank, world_size)
             desc = "generating images"
             for i in trange(0, eval_num_images, batch_size, desc=desc):
                 batch_size = min(batch_size, eval_num_images - i)
                 x_T = torch.randn(
-                    (batch_size, 3, conf.img_size, conf.img_size),
-                    device=device)
+                    (batch_size, 3, conf.img_size, conf.img_size), device=device
+                )
                 batch_images = render_uncondition(
                     conf=conf,
                     model=model,
@@ -231,7 +239,8 @@ def evaluate_fid(
                     sampler=sampler,
                     latent_sampler=latent_sampler,
                     conds_mean=conds_mean,
-                    conds_std=conds_std).cpu()
+                    conds_std=conds_std,
+                ).cpu()
 
                 batch_images = (batch_images + 1) / 2
                 # keep the generated images
@@ -239,19 +248,19 @@ def evaluate_fid(
                     img_name = filename(i + j)
                     torchvision.utils.save_image(
                         batch_images[j],
-                        os.path.join(conf.generate_dir, f'{img_name}.png'))
+                        os.path.join(conf.generate_dir, f"{img_name}.png"),
+                    )
         elif conf.model_type == ModelType.autoencoder:
             if conf.train_mode.is_latent_diffusion():
                 # evaluate autoencoder + latent diffusion (doesn't give the images)
                 model: BeatGANsAutoencModel
-                eval_num_images = chunk_size(conf.eval_num_images, rank,
-                                             world_size)
+                eval_num_images = chunk_size(conf.eval_num_images, rank, world_size)
                 desc = "generating images"
                 for i in trange(0, eval_num_images, batch_size, desc=desc):
                     batch_size = min(batch_size, eval_num_images - i)
                     x_T = torch.randn(
-                        (batch_size, 3, conf.img_size, conf.img_size),
-                        device=device)
+                        (batch_size, 3, conf.img_size, conf.img_size), device=device
+                    )
                     batch_images = render_uncondition(
                         conf=conf,
                         model=model,
@@ -268,23 +277,26 @@ def evaluate_fid(
                         img_name = filename(i + j)
                         torchvision.utils.save_image(
                             batch_images[j],
-                            os.path.join(conf.generate_dir, f'{img_name}.png'))
+                            os.path.join(conf.generate_dir, f"{img_name}.png"),
+                        )
             else:
                 # evaulate autoencoder (given the images)
                 # to make the FID fair, autoencoder must not see the validation dataset
                 # also shuffle to make it closer to unconditional generation
-                train_loader = make_subset_loader(conf,
-                                                  dataset=train_data,
-                                                  batch_size=batch_size,
-                                                  shuffle=True,
-                                                  parallel=True)
+                train_loader = make_subset_loader(
+                    conf,
+                    dataset=train_data,
+                    batch_size=batch_size,
+                    shuffle=True,
+                    parallel=True,
+                )
 
                 i = 0
-                for batch in tqdm(train_loader, desc='generating images'):
-                    imgs = batch['img'].to(device)
+                for batch in tqdm(train_loader, desc="generating images"):
+                    imgs = batch["img"].to(device)
                     x_T = torch.randn(
-                        (len(imgs), 3, conf.img_size, conf.img_size),
-                        device=device)
+                        (len(imgs), 3, conf.img_size, conf.img_size), device=device
+                    )
                     batch_images = render_condition(
                         conf=conf,
                         model=model,
@@ -292,7 +304,8 @@ def evaluate_fid(
                         x_start=imgs,
                         cond=None,
                         sampler=sampler,
-                        latent_sampler=latent_sampler).cpu()
+                        latent_sampler=latent_sampler,
+                    ).cpu()
                     # model: BeatGANsAutoencModel
                     # # returns {'cond', 'cond2'}
                     # conds = model.encode(imgs)
@@ -306,7 +319,8 @@ def evaluate_fid(
                         img_name = filename(i + j)
                         torchvision.utils.save_image(
                             batch_images[j],
-                            os.path.join(conf.generate_dir, f'{img_name}.png'))
+                            os.path.join(conf.generate_dir, f"{img_name}.png"),
+                        )
                     i += len(imgs)
         else:
             raise NotImplementedError()
@@ -316,10 +330,8 @@ def evaluate_fid(
 
     if get_rank() == 0:
         fid = fid_score.calculate_fid_given_paths(
-            [cache_dir, conf.generate_dir],
-            batch_size,
-            device=device,
-            dims=2048)
+            [cache_dir, conf.generate_dir], batch_size, device=device, dims=2048
+        )
 
         # remove the cache
         if remove_cache and os.path.exists(conf.generate_dir):
@@ -332,10 +344,10 @@ def evaluate_fid(
         fid = torch.tensor(float(fid), device=device)
         broadcast(fid, 0)
     else:
-        fid = torch.tensor(0., device=device)
+        fid = torch.tensor(0.0, device=device)
         broadcast(fid, 0)
     fid = fid.item()
-    print(f'fid ({get_rank()}):', fid)
+    print(f"fid ({get_rank()}):", fid)
 
     return fid
 
@@ -348,11 +360,10 @@ def loader_to_path(loader: DataLoader, path: str, denormalize: bool):
 
     # write the loader to files
     i = 0
-    for batch in tqdm(loader, desc='copy images'):
-        imgs = batch['img']
+    for batch in tqdm(loader, desc="copy images"):
+        imgs = batch["img"]
         if denormalize:
             imgs = (imgs + 1) / 2
         for j in range(len(imgs)):
-            torchvision.utils.save_image(imgs[j],
-                                         os.path.join(path, f'{i+j}.png'))
+            torchvision.utils.save_image(imgs[j], os.path.join(path, f"{i+j}.png"))
         i += len(imgs)

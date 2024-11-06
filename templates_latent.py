@@ -88,8 +88,8 @@ def ffhq128_autoenc_latent():
     conf = adamw_weight_decay(conf)
     conf.total_samples = 101_000_000
     conf.latent_loss_type = LossType.l1
-    conf.latent_beta_scheduler = 'const0.008'
-    conf.name = 'ffhq128_autoenc_latent'
+    conf.latent_beta_scheduler = "const0.008"
+    conf.name = "ffhq128_autoenc_latent"
     return conf
 
 
@@ -101,11 +101,11 @@ def ffhq256_autoenc_latent():
     conf = adamw_weight_decay(conf)
     conf.total_samples = 101_000_000
     conf.latent_loss_type = LossType.l1
-    conf.latent_beta_scheduler = 'const0.008'
+    conf.latent_beta_scheduler = "const0.008"
     conf.eval_ema_every_samples = 200_000_000
     conf.eval_every_samples = 200_000_000
     conf.sample_every_samples = 4_000_000
-    conf.name = 'ffhq256_autoenc_latent'
+    conf.name = "ffhq256_autoenc_latent"
     return conf
 
 
@@ -115,9 +115,9 @@ def horse128_autoenc_latent():
     conf = latent_2048_batch_size(conf)
     conf = latent_mlp_2048_norm_20layers(conf)
     conf.total_samples = 2_001_000_000
-    conf.latent_beta_scheduler = 'const0.008'
+    conf.latent_beta_scheduler = "const0.008"
     conf.latent_loss_type = LossType.l1
-    conf.name = 'horse128_autoenc_latent'
+    conf.name = "horse128_autoenc_latent"
     return conf
 
 
@@ -127,9 +127,9 @@ def bedroom128_autoenc_latent():
     conf = latent_2048_batch_size(conf)
     conf = latent_mlp_2048_norm_20layers(conf)
     conf.total_samples = 2_001_000_000
-    conf.latent_beta_scheduler = 'const0.008'
+    conf.latent_beta_scheduler = "const0.008"
     conf.latent_loss_type = LossType.l1
-    conf.name = 'bedroom128_autoenc_latent'
+    conf.name = "bedroom128_autoenc_latent"
     return conf
 
 
@@ -140,11 +140,10 @@ def celeba64d2c_autoenc_latent():
     conf = latent_mlp_2048_norm_10layers(conf)
     conf = adamw_weight_decay(conf)
     # just for the name
-    conf.continue_from = PretrainConfig('200M',
-                                        f'log-latent/{conf.name}/last.ckpt')
-    conf.postfix = '_300M'
+    conf.continue_from = PretrainConfig("200M", f"log-latent/{conf.name}/last.ckpt")
+    conf.postfix = "_300M"
     conf.total_samples = 301_000_000
-    conf.latent_beta_scheduler = 'const0.008'
+    conf.latent_beta_scheduler = "const0.008"
     conf.latent_loss_type = LossType.l1
-    conf.name = 'celeba64d2c_autoenc_latent'
+    conf.name = "celeba64d2c_autoenc_latent"
     return conf

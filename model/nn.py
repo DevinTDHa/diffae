@@ -117,14 +117,13 @@ def timestep_embedding(timesteps, dim, max_period=10000):
     :return: an [N x dim] Tensor of positional embeddings.
     """
     half = dim // 2
-    freqs = th.exp(-math.log(max_period) *
-                   th.arange(start=0, end=half, dtype=th.float32) /
-                   half).to(device=timesteps.device)
+    freqs = th.exp(
+        -math.log(max_period) * th.arange(start=0, end=half, dtype=th.float32) / half
+    ).to(device=timesteps.device)
     args = timesteps[:, None].float() * freqs[None]
     embedding = th.cat([th.cos(args), th.sin(args)], dim=-1)
     if dim % 2:
-        embedding = th.cat(
-            [embedding, th.zeros_like(embedding[:, :1])], dim=-1)
+        embedding = th.cat([embedding, th.zeros_like(embedding[:, :1])], dim=-1)
     return embedding
 
 
@@ -132,6 +131,7 @@ def torch_checkpoint(func, args, flag, preserve_rng_state=False):
     # torch's gradient checkpoint works with automatic mixed precision, given torch >= 1.8
     if flag:
         return torch.utils.checkpoint.checkpoint(
-            func, *args, preserve_rng_state=preserve_rng_state)
+            func, *args, preserve_rng_state=preserve_rng_state
+        )
     else:
         return func(*args)

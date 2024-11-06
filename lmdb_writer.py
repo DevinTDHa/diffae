@@ -55,8 +55,7 @@ class _WriterWroker(Process):
                     break
                 with env.begin(write=True) as txn:
                     for x in job:
-                        key = f"{str(self.i).zfill(self.zfill)}".encode(
-                            "utf-8")
+                        key = f"{str(self.i).zfill(self.zfill)}".encode("utf-8")
                         x = convert(x, self.format, self.quality)
                         txn.put(key, x)
                         self.i += 1
@@ -66,7 +65,7 @@ class _WriterWroker(Process):
 
 
 class LMDBImageWriter:
-    def __init__(self, path, format='webp', quality=100, zfill=7) -> None:
+    def __init__(self, path, format="webp", quality=100, zfill=7) -> None:
         self.path = path
         self.format = format
         self.quality = quality
@@ -76,8 +75,9 @@ class LMDBImageWriter:
 
     def __enter__(self):
         self.queue = Queue(maxsize=3)
-        self.worker = _WriterWroker(self.path, self.format, self.quality,
-                                    self.zfill, self.queue)
+        self.worker = _WriterWroker(
+            self.path, self.format, self.quality, self.zfill, self.queue
+        )
         self.worker.start()
 
     def put_images(self, tensor):
@@ -112,18 +112,17 @@ class LMDBImageReader(Dataset):
         )
 
         if not self.env:
-            raise IOError('Cannot open lmdb dataset', path)
+            raise IOError("Cannot open lmdb dataset", path)
 
         with self.env.begin(write=False) as txn:
-            self.length = int(
-                txn.get('length'.encode('utf-8')).decode('utf-8'))
+            self.length = int(txn.get("length".encode("utf-8")).decode("utf-8"))
 
     def __len__(self):
         return self.length
 
     def __getitem__(self, index):
         with self.env.begin(write=False) as txn:
-            key = f'{str(index).zfill(self.zfill)}'.encode('utf-8')
+            key = f"{str(index).zfill(self.zfill)}".encode("utf-8")
             img_bytes = txn.get(key)
 
         buffer = BytesIO(img_bytes)

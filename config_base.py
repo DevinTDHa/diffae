@@ -28,7 +28,7 @@ class BaseConfig:
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         conf = self.as_dict_jsonable()
-        with open(save_path, 'w') as f:
+        with open(save_path, "w") as f:
             json.dump(conf, f)
 
     def load(self, load_path):

@@ -14,7 +14,7 @@ class BeatGANsAutoencConfig(BeatGANsUNetConfig):
     # number of style channels
     enc_out_channels: int = 512
     enc_attn_resolutions: Tuple[int] = None
-    enc_pool: str = 'depthconv'
+    enc_pool: str = "depthconv"
     enc_num_res_block: int = 2
     enc_channel_mult: Tuple[int] = None
     enc_grad_checkpoint: bool = False
@@ -42,8 +42,9 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             out_hid_channels=conf.enc_out_channels,
             out_channels=conf.enc_out_channels,
             num_res_blocks=conf.enc_num_res_block,
-            attention_resolutions=(conf.enc_attn_resolutions
-                                   or conf.attention_resolutions),
+            attention_resolutions=(
+                conf.enc_attn_resolutions or conf.attention_resolutions
+            ),
             dropout=conf.dropout,
             channel_mult=conf.enc_channel_mult or conf.channel_mult,
             use_time_condition=False,
@@ -84,12 +85,15 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
 
     def encode(self, x):
         cond = self.encoder.forward(x)
-        return {'cond': cond}
+        return {"cond": cond}
 
     @property
     def stylespace_sizes(self):
-        modules = list(self.input_blocks.modules()) + list(
-            self.middle_block.modules()) + list(self.output_blocks.modules())
+        modules = (
+            list(self.input_blocks.modules())
+            + list(self.middle_block.modules())
+            + list(self.output_blocks.modules())
+        )
         sizes = []
         for module in modules:
             if isinstance(module, ResBlock):
@@ -101,8 +105,11 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
         """
         encode to style space
         """
-        modules = list(self.input_blocks.modules()) + list(
-            self.middle_block.modules()) + list(self.output_blocks.modules())
+        modules = (
+            list(self.input_blocks.modules())
+            + list(self.middle_block.modules())
+            + list(self.output_blocks.modules())
+        )
         # (n, c)
         cond = self.encoder.forward(x)
         S = []
@@ -118,16 +125,18 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
         else:
             return S
 
-    def forward(self,
-                x,
-                t,
-                y=None,
-                x_start=None,
-                cond=None,
-                style=None,
-                noise=None,
-                t_cond=None,
-                **kwargs):
+    def forward(
+        self,
+        x,
+        t,
+        y=None,
+        x_start=None,
+        cond=None,
+        style=None,
+        noise=None,
+        t_cond=None,
+        **kwargs,
+    ):
         """
         Apply the model to an input batch.
 
@@ -146,10 +155,10 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
 
         if cond is None:
             if x is not None:
-                assert len(x) == len(x_start), f'{len(x)} != {len(x_start)}'
+                assert len(x) == len(x_start), f"{len(x)} != {len(x_start)}"
 
             tmp = self.encode(x_start)
-            cond = tmp['cond']
+            cond = tmp["cond"]
 
         if t is not None:
             _t_emb = timestep_embedding(t, self.conf.model_channels)
@@ -208,9 +217,7 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
             k = 0
             for i in range(len(self.input_num_blocks)):
                 for j in range(self.input_num_blocks[i]):
-                    h = self.input_blocks[k](h,
-                                             emb=enc_time_emb,
-                                             cond=enc_cond_emb)
+                    h = self.input_blocks[k](h, emb=enc_time_emb, cond=enc_cond_emb)
 
                     # print(i, j, h.shape)
                     hs[i].append(h)
@@ -238,10 +245,9 @@ class BeatGANsAutoencModel(BeatGANsUNetModel):
                     lateral = None
                     # print(i, j, lateral)
 
-                h = self.output_blocks[k](h,
-                                          emb=dec_time_emb,
-                                          cond=dec_cond_emb,
-                                          lateral=lateral)
+                h = self.output_blocks[k](
+                    h, emb=dec_time_emb, cond=dec_cond_emb, lateral=lateral
+                )
                 k += 1
 
         pred = self.out(h)
