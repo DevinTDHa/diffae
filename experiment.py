@@ -5,11 +5,11 @@ import re
 
 import numpy as np
 import pandas as pd
-import pytorch_lightning as pl
+import lightning as L
 import torch
 from numpy.lib.function_base import flip
-from pytorch_lightning import loggers as pl_loggers
-from pytorch_lightning.callbacks import *
+from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.callbacks import *
 from torch import nn
 from torch.cuda import amp
 from torch.distributions import Categorical
@@ -25,12 +25,12 @@ from metrics import *
 from renderer import *
 
 
-class LitModel(pl.LightningModule):
+class LitModel(L.LightningModule):
     def __init__(self, conf: TrainConfig):
         super().__init__()
         assert conf.train_mode != TrainMode.manipulate
         if conf.seed is not None:
-            pl.seed_everything(conf.seed)
+            L.seed_everything(conf.seed)
 
         self.save_hyperparameters(conf.as_dict_jsonable())
 
@@ -114,6 +114,17 @@ class LitModel(pl.LightningModule):
         return pred_img
 
     def render(self, noise, cond=None, T=None):
+        """
+        Renders an image based on the provided noise and optional conditioning.
+
+        Parameters:
+        noise (torch.Tensor): The input noise tensor for the rendering process.
+        cond (torch.Tensor, optional): The conditioning tensor. If provided, the rendering will be conditioned on this tensor. Defaults to None.
+        T (int, optional): The number of timesteps for the diffusion process. If None, the default evaluation sampler is used. Defaults to None.
+
+        Returns:
+        torch.Tensor: The rendered image tensor, with values scaled to the range [0, 1].
+        """
         if T is None:
             sampler = self.eval_sampler
         else:
@@ -925,19 +936,19 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = "train"):
         save_dir=conf.logdir, name=None, version=""
     )
 
-    # from pytorch_lightning.
+    # from lightning.
 
     plugins = []
     if len(gpus) == 1 and nodes == 1:
         accelerator = None
     else:
         accelerator = "ddp"
-        from pytorch_lightning.plugins import DDPPlugin
+        from lightning.plugins import DDPPlugin
 
         # important for working with gradient checkpoint
         plugins.append(DDPPlugin(find_unused_parameters=False))
 
-    trainer = pl.Trainer(
+    trainer = L.Trainer(
         max_steps=conf.total_samples // conf.batch_size_effective,
         resume_from_checkpoint=resume,
         gpus=gpus,
