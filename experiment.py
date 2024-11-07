@@ -113,9 +113,11 @@ class LitModel(L.LightningModule):
         pred_img = (pred_img + 1) / 2
         return pred_img
 
-    def render(self, noise, cond=None, T=None):
+    def render(self, noise, cond=None, T=None, grads=False):
         """
         Renders an image based on the provided noise and optional conditioning.
+
+        DAE (conditioned DDIM) backwards pass.
 
         Parameters:
         noise (torch.Tensor): The input noise tensor for the rendering process.
@@ -128,7 +130,7 @@ class LitModel(L.LightningModule):
         if T is None:
             sampler = self.eval_sampler
         else:
-            sampler = self.conf._make_diffusion_conf(T).make_sampler()
+            sampler = self.conf._make_diffusion_conf(T).make_sampler(grads=grads)
 
         if cond is not None:
             pred_img = render_condition(

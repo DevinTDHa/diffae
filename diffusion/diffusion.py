@@ -62,8 +62,17 @@ def space_timesteps(num_timesteps, section_counts):
 class SpacedDiffusionBeatGansConfig(GaussianDiffusionBeatGansConfig):
     use_timesteps: Tuple[int] = None
 
-    def make_sampler(self):
-        return SpacedDiffusionBeatGans(self)
+    def make_sampler(self, grads: bool = False):
+        """
+        Creates a sampler for the diffusion process.
+        Args:
+            grads (bool): Whether to enable gradients in the sampling process.
+        Returns:
+            SpacedDiffusionBeatGans: An instance of the SpacedDiffusionBeatGans class initialized with the current object.
+        """
+
+        sampler = SpacedDiffusionBeatGans(self, grads=grads)
+        return sampler
 
 
 class SpacedDiffusionBeatGans(GaussianDiffusionBeatGans):
@@ -75,14 +84,16 @@ class SpacedDiffusionBeatGans(GaussianDiffusionBeatGans):
     :param kwargs: the kwargs to create the base diffusion process.
     """
 
-    def __init__(self, conf: SpacedDiffusionBeatGansConfig):
+    def __init__(self, conf: SpacedDiffusionBeatGansConfig, grads=False):
         self.conf = conf
         self.use_timesteps = set(conf.use_timesteps)
         # how the new t's mapped to the old t's
         self.timestep_map = []
         self.original_num_steps = len(conf.betas)
 
-        base_diffusion = GaussianDiffusionBeatGans(conf)  # pylint: disable=missing-kwoa
+        base_diffusion = GaussianDiffusionBeatGans(
+            conf, grads
+        )  # pylint: disable=missing-kwoa
         last_alpha_cumprod = 1.0
         new_betas = []
         for i, alpha_cumprod in enumerate(base_diffusion.alphas_cumprod):
@@ -92,7 +103,7 @@ class SpacedDiffusionBeatGans(GaussianDiffusionBeatGans):
                 last_alpha_cumprod = alpha_cumprod
                 self.timestep_map.append(i)
         conf.betas = np.array(new_betas)
-        super().__init__(conf)
+        super().__init__(conf, grads=grads)
 
     def p_mean_variance(
         self, model: Model, *args, **kwargs

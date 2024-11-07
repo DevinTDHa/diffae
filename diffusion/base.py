@@ -5,6 +5,7 @@ https://github.com/hojonathanho/diffusion/blob/1e0dceb3b3495bbe19116a5e1b3596cd0
 Docstrings have been added, as well as DDIM sampling and a new collection of beta schedules.
 """
 
+import contextlib
 from model.unet_autoenc import AutoencReturn
 from config_base import BaseConfig
 import enum
@@ -53,14 +54,16 @@ class GaussianDiffusionBeatGans:
     :param rescale_timesteps: if True, pass floating point timesteps into the
                               model so that they are always scaled like in the
                               original paper (0 to 1000).
+    :param grads: if True, return gradients for the model during sampling and other operations.
     """
 
-    def __init__(self, conf: GaussianDiffusionBeatGansConfig):
+    def __init__(self, conf: GaussianDiffusionBeatGansConfig, grads=False):
         self.conf = conf
         self.model_mean_type = conf.model_mean_type
         self.model_var_type = conf.model_var_type
         self.loss_type = conf.loss_type
         self.rescale_timesteps = conf.rescale_timesteps
+        self.grads = grads
 
         # Use float64 for accuracy.
         betas = np.array(conf.betas, dtype=np.float64)
@@ -592,7 +595,7 @@ class GaussianDiffusionBeatGans:
         for i in indices:
             # t = th.tensor([i] * shape[0], device=device)
             t = th.tensor([i] * len(img), device=device)
-            with th.no_grad():
+            with th.no_grad() if not self.grads else contextlib.nullcontext():
                 out = self.p_sample(
                     model,
                     img,
@@ -713,7 +716,7 @@ class GaussianDiffusionBeatGans:
         sample = x
         for i in indices:
             t = th.tensor([i] * len(sample), device=device)
-            with th.no_grad():
+            with th.no_grad() if not self.grads else contextlib.nullcontext():
                 out = self.ddim_reverse_sample(
                     model,
                     sample,
@@ -820,7 +823,7 @@ class GaussianDiffusionBeatGans:
                 _kwargs = model_kwargs
 
             t = th.tensor([i] * len(img), device=device)
-            with th.no_grad():
+            with th.no_grad() if not self.grads else contextlib.nullcontext():
                 out = self.ddim_sample(
                     model,
                     img,
@@ -923,7 +926,7 @@ class GaussianDiffusionBeatGans:
             noise = th.randn_like(x_start)
             x_t = self.q_sample(x_start=x_start, t=t_batch, noise=noise)
             # Calculate VLB term at the current timestep
-            with th.no_grad():
+            with th.no_grad() if not self.grads else contextlib.nullcontext():
                 out = self._vb_terms_bpd(
                     model,
                     x_start=x_start,
