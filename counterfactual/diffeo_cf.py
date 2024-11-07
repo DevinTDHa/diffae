@@ -55,6 +55,7 @@ class DAEModel:
         return z_sem, xT
 
     def decode(self, xT, z_sem) -> torch.Tensor:
+        # TODO: Why is the result so bright?
         pred = self.model.render(xT, z_sem, T=self.backward_t, grads=True)
         return pred
 
@@ -267,6 +268,7 @@ class DiffeoCF:
                     regression=regression.item(),
                     loss=loss.item(),
                     grad_norm=grad_magnitude.item(),
+                    gpu_alloc_GB=torch.cuda.memory_allocated() / 1024**3,
                 )
                 progress_bar.update()
 
