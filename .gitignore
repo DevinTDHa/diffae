@@ -13,7 +13,7 @@ datasets/celeba
 checkpoints
 
 .ipynb_checkpoints/
-.vscode/
+**/.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
