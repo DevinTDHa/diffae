@@ -337,14 +337,14 @@ if __name__ == "__main__":
         "--lr",
         type=float,
         help="Learning rate for the optimizer.",
-        default=1e-3,
+        default=5e-3,
         required=False,
     )
     parser.add_argument(
         "--save_at",
         type=float,
         help="Target value for early stopping threshold.",
-        default=0.99,
+        default=0.9,
         required=False,
     )
     parser.add_argument(
