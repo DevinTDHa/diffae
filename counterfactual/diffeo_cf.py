@@ -20,6 +20,7 @@ from counterfactuals.utils import (
 from counterfactuals.plot import plot_grid_part
 
 import matplotlib
+import json
 
 matplotlib.use("Agg")
 matplotlib.rc("text")
@@ -290,28 +291,18 @@ class RedModel(torch.nn.Module):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run adversarial attack.")
-    # parser.add_argument(
-    #     "--gmodel_path", type=str, required=True, help="Path to the generative model."
-    # )
-    # parser.add_argument(
-    #     "--gmodel_type",
-    #     type=str,
-    #     required=True,
-    #     help="Type to the generative model.",
-    #     default="Flow",
-    # )
-    # parser.add_argument(
-    #     "--rmodel_path",
-    #     type=str,
-    #     required=True,
-    #     help="Path to the regression model.",
-    # )
-    # parser.add_argument(
-    #     "--rmodel_type",
-    #     type=str,
-    #     required=True,
-    #     help="Type to the regression model.",
-    # )
+    parser.add_argument(
+        "--rmodel_path",
+        type=str,
+        required=True,
+        help="Path to the regression model.",
+    )
+    parser.add_argument(
+        "--rmodel_type",
+        type=str,
+        required=True,
+        help="Type to the regression model.",
+    )
     parser.add_argument(
         "--image_path", type=str, required=True, help="Path to the input image."
     )
@@ -363,7 +354,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--maximize",
-        action="store_true",
+        type=lambda x: (str(x).lower() in ["true", "1", "yes"]),
         help="Whether we need to maximize towards the target value",
         default=True,
         required=False,
@@ -393,8 +384,10 @@ if __name__ == "__main__":
     gmodel = DAEModel(forward_t=args.forward_t, backward_t=args.backward_t)
 
     # Load regression model
-    # regressor = load_model(args.rmodel_type, args.rmodel_path).model
-    regressor = RedModel()
+    if args.rmodel_type.lower() == "red":
+        regressor = RedModel()
+    else:
+        regressor = load_model(args.rmodel_type, args.rmodel_path).model
 
     diffeo_cf = DiffeoCF(
         gmodel=gmodel,
@@ -414,5 +407,5 @@ if __name__ == "__main__":
     )
 
     # Save args to a config txt file
-    with open(os.path.join(args.result_dir, "diffeocf_last_args.txt"), "w") as f:
-        f.write(str(args))
+    with open(os.path.join(args.result_dir, "diffeocf_last_args.json"), "w") as f:
+        json.dump(vars(args), f, indent=2)
