@@ -54,7 +54,7 @@ def render_condition(
         assert conf.model_type.has_autoenc()
         # returns {'cond', 'cond2'}
         if cond is None:
-            cond = model.encode(x_start)
+            cond = model.encode(x_start)["cond"]
         return sampler.sample(model=model, noise=x_T, model_kwargs={"cond": cond})
     else:
         raise NotImplementedError()

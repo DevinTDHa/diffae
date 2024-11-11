@@ -411,9 +411,7 @@ class LitModel(L.LightningModule):
 
         return {"loss": loss}
 
-    def on_train_batch_end(
-        self, outputs, batch, batch_idx: int, dataloader_idx: int
-    ) -> None:
+    def on_train_batch_end(self, outputs, batch, batch_idx: int) -> None:
         """
         after each training step ...
         """
@@ -438,9 +436,7 @@ class LitModel(L.LightningModule):
             self.log_sample(x_start=imgs)
             self.evaluate_scores()
 
-    def on_before_optimizer_step(
-        self, optimizer: Optimizer, optimizer_idx: int
-    ) -> None:
+    def on_before_optimizer_step(self, optimizer: Optimizer) -> None:
         # fix the fp16 + clip grad norm problem with pytorch lightinng
         # this is the currently correct way to do it
         if self.conf.grad_clip > 0:
@@ -908,7 +904,7 @@ def is_time(num_samples, every, step_size):
     return num_samples - closest < step_size
 
 
-def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train"):
+def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None):
     print("conf:", conf)
     # assert not (conf.fp16 and conf.grad_clip > 0
     #             ), 'pytorch lightning has bug with amp + gradient clipping'
@@ -938,8 +934,10 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train"):
 
     tb_logger = TensorBoardLogger(save_dir=conf.logdir, name=None, version="")
 
+    max_steps = conf.total_samples // conf.batch_size_effective
+    print("max steps:", max_steps)
     trainer = L.Trainer(
-        max_steps=conf.total_samples // conf.batch_size_effective,
+        max_steps=max_steps,
         num_nodes=nodes,
         precision=16 if conf.fp16 else 32,
         callbacks=[
@@ -951,7 +949,7 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train"):
         logger=tb_logger,
         accumulate_grad_batches=conf.accum_batches,
         log_every_n_steps=5,
-        val_check_interval=0.1,
+        max_time=max_time,
     )
 
     if mode == "train":

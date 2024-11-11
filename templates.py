@@ -154,16 +154,24 @@ def ffhq256_autoenc():
 
 
 def basf512_autoenc():
+    num_images = 2860  # BASF dataset has 2860 images
     conf = autoenc_base()
     conf.data_name = "basf512"
     conf.img_size = 512
     conf.net_ch = 256
     conf.net_ch_mult = (1, 1, 2, 2, 4, 4)
     conf.net_enc_channel_mult = (1, 1, 2, 2, 4, 4, 4)
-    conf.eval_every_samples = 10_000_000
-    conf.eval_ema_every_samples = 10_000_000
-    conf.total_samples = 200_000_000
-    conf.batch_size = 16
+    conf.total_samples = num_images * 1000
+
+    # conf.sample_every_samples = 10
+    conf.sample_every_samples = num_images * 2
+    # conf.eval_every_samples = 10
+    conf.eval_every_samples = num_images * 2
+    # conf.eval_ema_every_samples = 10
+    conf.eval_ema_every_samples = num_images * 2
+    conf.eval_num_images = int(num_images * 0.25)
+    conf.batch_size = 3
+    conf.batch_size_eval = 3
     conf.make_model_conf()
     conf.name = "basf512_autoenc"
     return conf

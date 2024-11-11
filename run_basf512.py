@@ -9,4 +9,4 @@ if __name__ == "__main__":
     torch.set_float32_matmul_precision("high")
     # do not run this directly, use `sbatch run_ffhq256.sh` to spawn the srun properly.
     conf = basf512_autoenc()
-    train(conf)
+    train(conf, max_time="1:23:55:00")
