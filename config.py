@@ -23,6 +23,8 @@ import os
 from dataset_util import *
 from torch.utils.data.distributed import DistributedSampler
 
+from thesis_utils.basf_dataset import BASFDataset
+
 data_paths = {
     "ffhqlmdb256": os.path.expanduser("datasets/ffhq256.lmdb"),
     # used for training a classifier
@@ -37,6 +39,7 @@ data_paths = {
         "datasets/celeba_anno/CelebAMask-HQ-attribute-anno.txt"
     ),
     "celeba_relight": os.path.expanduser("datasets/celeba_hq_light/celeba_light.txt"),
+    "basf512": "/data/basf",
 }
 
 
@@ -303,6 +306,21 @@ class TrainConfig(BaseConfig):
                 original_resolution=None,
                 crop_d2c=True,
                 **kwargs,
+            )
+        elif self.data_name == "basf512":
+            # Construct transforms for DDPM
+            transform = [
+                transforms.Resize(self.img_size),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+
+            transform = transforms.Compose(transform)
+            return BASFDataset(
+                root_dir=path or self.data_path,
+                dataset_name="combined",
+                transform=transform,
+                get_mode="dae"
             )
         else:
             raise NotImplementedError()

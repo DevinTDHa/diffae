@@ -153,6 +153,22 @@ def ffhq256_autoenc():
     return conf
 
 
+def basf512_autoenc():
+    conf = autoenc_base()
+    conf.data_name = "basf512"
+    conf.img_size = 512
+    conf.net_ch = 256
+    conf.net_ch_mult = (1, 1, 2, 2, 4, 4)
+    conf.net_enc_channel_mult = (1, 1, 2, 2, 4, 4, 4)
+    conf.eval_every_samples = 10_000_000
+    conf.eval_ema_every_samples = 10_000_000
+    conf.total_samples = 200_000_000
+    conf.batch_size = 16
+    conf.make_model_conf()
+    conf.name = "basf512_autoenc"
+    return conf
+
+
 def ffhq256_autoenc_eco():
     conf = ffhq128_autoenc_base()
     conf.img_size = 256
@@ -278,6 +294,16 @@ def pretrain_ffhq256_autoenc():
         path=f"checkpoints/{ffhq256_autoenc().name}/last.ckpt",
     )
     conf.latent_infer_path = f"checkpoints/{ffhq256_autoenc().name}/latent.pkl"
+    return conf
+
+
+def pretrain_basf512_autoenc():
+    conf = basf512_autoenc()
+    conf.pretrain = PretrainConfig(
+        name="90M",
+        path=f"checkpoints/{basf512_autoenc().name}/last.ckpt",
+    )
+    conf.latent_infer_path = f"checkpoints/{basf512_autoenc().name}/latent.pkl"
     return conf
 
 

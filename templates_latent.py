@@ -109,6 +109,22 @@ def ffhq256_autoenc_latent():
     return conf
 
 
+def basf512_autoenc_latent():
+    conf = pretrain_basf512_autoenc()
+    conf = latent_diffusion128_config(conf)  # Batch Size 128
+    conf = latent_mlp_2048_norm_10layers(conf)
+    conf = latent_256_batch_size(conf) # Batch Size 256
+    conf = adamw_weight_decay(conf)
+    conf.total_samples = 101_000_000
+    conf.latent_loss_type = LossType.l1
+    conf.latent_beta_scheduler = "const0.008"
+    conf.eval_ema_every_samples = 200_000_000
+    conf.eval_every_samples = 200_000_000
+    conf.sample_every_samples = 4_000_000
+    conf.name = "basf512_autoenc_latent"
+    return conf
+
+
 def horse128_autoenc_latent():
     conf = pretrain_horse128()
     conf = latent_diffusion128_config(conf)

@@ -9,7 +9,7 @@ import lightning as L
 import torch
 from numpy.lib.function_base import flip
 from lightning.pytorch.loggers import TensorBoardLogger
-from lightning.pytorch.callbacks import *
+from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from torch import nn
 from torch.cuda import amp
 from torch.distributions import Categorical
@@ -908,18 +908,20 @@ def is_time(num_samples, every, step_size):
     return num_samples - closest < step_size
 
 
-def train(conf: TrainConfig, gpus, nodes=1, mode: str = "train"):
-    print("conf:", conf.name)
+def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train"):
+    print("conf:", conf)
     # assert not (conf.fp16 and conf.grad_clip > 0
     #             ), 'pytorch lightning has bug with amp + gradient clipping'
     model = LitModel(conf)
 
     if not os.path.exists(conf.logdir):
         os.makedirs(conf.logdir)
+
     checkpoint = ModelCheckpoint(
+        monitor="FID",
         dirpath=f"{conf.logdir}",
         save_last=True,
-        save_top_k=1,
+        save_top_k=2,
         every_n_train_steps=conf.save_every_samples // conf.batch_size_effective,
     )
     checkpoint_path = f"{conf.logdir}/last.ckpt"
@@ -934,28 +936,11 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = "train"):
         else:
             resume = None
 
-    tb_logger = pl_loggers.TensorBoardLogger(
-        save_dir=conf.logdir, name=None, version=""
-    )
-
-    # from lightning.
-
-    plugins = []
-    if len(gpus) == 1 and nodes == 1:
-        accelerator = None
-    else:
-        accelerator = "ddp"
-        from lightning.plugins import DDPPlugin
-
-        # important for working with gradient checkpoint
-        plugins.append(DDPPlugin(find_unused_parameters=False))
+    tb_logger = TensorBoardLogger(save_dir=conf.logdir, name=None, version="")
 
     trainer = L.Trainer(
         max_steps=conf.total_samples // conf.batch_size_effective,
-        resume_from_checkpoint=resume,
-        gpus=gpus,
         num_nodes=nodes,
-        accelerator=accelerator,
         precision=16 if conf.fp16 else 32,
         callbacks=[
             checkpoint,
@@ -963,14 +948,14 @@ def train(conf: TrainConfig, gpus, nodes=1, mode: str = "train"):
         ],
         # clip in the model instead
         # gradient_clip_val=conf.grad_clip,
-        replace_sampler_ddp=True,
         logger=tb_logger,
         accumulate_grad_batches=conf.accum_batches,
-        plugins=plugins,
+        log_every_n_steps=5,
+        val_check_interval=0.1,
     )
 
     if mode == "train":
-        trainer.fit(model)
+        trainer.fit(model, ckpt_path=resume)
     elif mode == "eval":
         # load the latest checkpoint
         # perform lpips
