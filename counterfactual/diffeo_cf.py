@@ -48,10 +48,9 @@ class DAEModel:
         return model, conf
 
     def encode(self, batch: torch.Tensor):
-        z_sem: torch.Tensor = self.model.encode(batch.to(device))
-        xT: torch.Tensor = self.model.encode_stochastic(
-            batch.to(device), z_sem, T=self.forward_t
-        )
+        batch = batch.to(device)
+        z_sem: torch.Tensor = self.model.encode(batch)
+        xT: torch.Tensor = self.model.encode_stochastic(batch, z_sem, T=self.forward_t)
         return z_sem, xT
 
     def decode(self, xT, z_sem) -> torch.Tensor:
@@ -67,18 +66,22 @@ class DiffeoCF:
         rmodel: torch.nn.Module,
         data_shape: tuple[int, int, int],
         result_dir: str,
+        do_normalize=True,
     ):
         self.gmodel = gmodel
         self.rmodel = rmodel
         self.data_shape = data_shape
-        self.transforms = torchvision.transforms.Compose(
-            [
-                torchvision.transforms.Lambda(lambda img: img.convert("RGB")),
-                torchvision.transforms.Resize((data_shape[1], data_shape[2])),
-                torchvision.transforms.ToTensor(),
-                torchvision.transforms.Lambda(lambda x: x.unsqueeze(0)),
-            ]
-        )
+        transformations = [
+            torchvision.transforms.Lambda(lambda img: img.convert("RGB")),
+            torchvision.transforms.Resize((data_shape[1], data_shape[2])),
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Lambda(lambda x: x.unsqueeze(0)),
+        ]
+        if do_normalize:  # DDPMs
+            transformations.append(
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            )
+        self.transforms = transforms.Compose(transformations)
 
         if os.path.exists(result_dir):
             timestamp = int(os.path.getmtime(result_dir))
@@ -111,7 +114,7 @@ class DiffeoCF:
             # define z as params for derivative wrt to z
             z_sem, xT = self.gmodel.encode(x)
             z_sem.detach()
-            x_org = x.detach().clone()
+            x_org = (x.detach().cpu().clone() + 1) / 2
             z_org = z_sem.clone()
 
             z_sem.requires_grad = True
@@ -177,7 +180,7 @@ class DiffeoCF:
         image_name,
         cmap_img,
     ):
-        heatmap = torch.abs(x_org - x_prime).sum(dim=0).sum(dim=0)
+        heatmap = torch.abs(x_org.to(x_prime) - x_prime).sum(dim=0).sum(dim=0)
 
         all_images = [torch_to_image(x_org)]
         titles = ["x", "x'", "delta x"]
@@ -248,12 +251,13 @@ class DiffeoCF:
                     x = self.gmodel.decode(xT, z_sem)
 
                 # assert that x is a valid image
+                # TODO: check the image quality. why is it so bright? we need normalize it first? Is it perhaps normalized twice?
                 x.data = torch.clip(x.data, min=0.0, max=1.0)
 
                 regression = self.rmodel(x)
                 loss: torch.Tensor = loss_fn(regression, target_pt)
 
-                self.save_intermediate_img(x[0], 0, n_iter=step, y_pred=regression)
+                self.save_intermediate_img(x, 0, n_iter=step, y_pred=regression)
 
                 if (maximize and regression.item() > save_at) or (
                     not maximize and regression.item() < save_at
@@ -333,14 +337,14 @@ if __name__ == "__main__":
         "--lr",
         type=float,
         help="Learning rate for the optimizer.",
-        default=5e-2,
+        default=1e-3,
         required=False,
     )
     parser.add_argument(
         "--save_at",
         type=float,
         help="Target value for early stopping threshold.",
-        default=0.9,
+        default=0.99,
         required=False,
     )
     parser.add_argument(
