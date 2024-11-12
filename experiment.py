@@ -913,12 +913,14 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None
     if not os.path.exists(conf.logdir):
         os.makedirs(conf.logdir)
 
+    print("logdir:", conf.logdir)
     checkpoint = ModelCheckpoint(
         monitor="FID",
         dirpath=f"{conf.logdir}",
         save_last=True,
-        save_top_k=2,
+        save_top_k=3,
         every_n_train_steps=conf.save_every_samples // conf.batch_size_effective,
+        verbose=True,
     )
     checkpoint_path = f"{conf.logdir}/last.ckpt"
     print("ckpt path:", checkpoint_path)
