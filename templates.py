@@ -161,21 +161,28 @@ def basf512_autoenc():
     conf.net_ch = 256
     conf.net_ch_mult = (1, 1, 2, 2, 4, 4)
     conf.net_enc_channel_mult = (1, 1, 2, 2, 4, 4, 4)
-    conf.total_samples = num_images * 300
+
+    max_epochs = 300
+    conf.total_samples = num_images * max_epochs
 
     # conf.sample_every_samples = 10
     conf.sample_every_samples = num_images * 10
     conf.sample_size = 8
     # conf.eval_every_samples = 10
-    conf.eval_every_samples = num_images * 2
+    conf.eval_every_samples = num_images * 5
     # conf.eval_ema_every_samples = 10
-    conf.eval_ema_every_samples = num_images * 2
-    conf.eval_num_images = int(num_images * 0.25)
+    conf.eval_ema_every_samples = num_images * 5
+    conf.eval_num_images = 12  # int(num_images * 0.01)
+    # Save Model
     conf.save_every_samples = num_images * 10
+
     conf.batch_size = 3
     conf.batch_size_eval = 3
-    conf.make_model_conf()
+
+    conf.work_cache_dir = os.path.join(conf.logdir, "cache")
     conf.name = "basf512_autoenc"
+
+    conf.make_model_conf()
     return conf
 
 

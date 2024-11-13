@@ -8,8 +8,10 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run basf512 training")
-    parser.add_argument("--max_time", type=str, default="6:23:55:00", help="Maximum training time")
-    
+    parser.add_argument(
+        "--max_time", type=str, default="6:23:55:00", help="Maximum training time"
+    )
+
     torch.set_float32_matmul_precision("high")
     # do not run this directly, use `sbatch run_ffhq256.sh` to spawn the srun properly.
     conf = basf512_autoenc()

@@ -883,6 +883,25 @@ class LitModel(L.LightningModule):
 
 
 def ema(source, target, decay):
+    """
+    Updates the target model parameters using Exponential Moving Average (EMA) of
+    the source model parameters.
+
+    Parameters
+    ----------
+    source : torch.nn.Module
+        The source model whose parameters are used to update the target model.
+    target : torch.nn.Module
+        The target model whose parameters are updated.
+    decay : float
+        The decay rate for the EMA. Should be a value between 0 and 1, where a higher
+        value means more weight is given to the previous target parameters.
+
+    Returns
+    -------
+    None
+    """
+
     source_dict = source.state_dict()
     target_dict = target.state_dict()
     for key in source_dict.keys():
