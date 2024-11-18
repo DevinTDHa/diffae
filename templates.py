@@ -153,8 +153,44 @@ def ffhq256_autoenc():
     return conf
 
 
+def basf512_autoenc_test():
+    conf = autoenc_base()
+    conf.data_name = "basf512"
+    conf.img_size = 512
+    conf.net_ch = 256
+    conf.net_ch_mult = (1, 1, 2, 2, 4, 4)
+    conf.net_enc_channel_mult = (1, 1, 2, 2, 4, 4, 4)
+
+    conf.batch_size = 3
+    conf.batch_size_eval = 3
+    
+    num_images = 10  # basf dataset has 2860 images
+    max_epochs = 3
+    conf.total_samples = num_images * max_epochs * conf.batch_size
+
+    # conf.sample_every_samples = 10
+    conf.sample_every_samples = num_images * 2
+    conf.sample_size = 8
+    # conf.eval_every_samples = 10
+    conf.eval_every_samples = num_images * 2
+    # conf.eval_ema_every_samples = 10
+    conf.eval_ema_every_samples = num_images * 2
+    conf.eval_num_images = conf.batch_size  # int(num_images * 0.01)
+    # save model
+    conf.save_every_samples = num_images * 2
+
+
+    conf.work_cache_dir = os.path.join(conf.logdir, "cache")
+    conf.name = "basf512_autoenc_test"
+
+    # conf.optimizer = optimizertype.adamw
+
+    conf.make_model_conf()
+    return conf
+
+
 def basf512_autoenc():
-    num_images = 2860  # BASF dataset has 2860 images
+    num_images = 2859  # basf dataset has 2860 images
     conf = autoenc_base()
     conf.data_name = "basf512"
     conf.img_size = 512
@@ -173,14 +209,16 @@ def basf512_autoenc():
     # conf.eval_ema_every_samples = 10
     conf.eval_ema_every_samples = num_images * 5
     conf.eval_num_images = 12  # int(num_images * 0.01)
-    # Save Model
-    conf.save_every_samples = num_images * 10
+    # save model
+    conf.save_every_samples = num_images * 2
 
     conf.batch_size = 3
     conf.batch_size_eval = 3
 
     conf.work_cache_dir = os.path.join(conf.logdir, "cache")
     conf.name = "basf512_autoenc"
+
+    # conf.optimizer = optimizertype.adamw
 
     conf.make_model_conf()
     return conf

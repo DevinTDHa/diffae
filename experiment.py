@@ -400,14 +400,10 @@ class LitModel(L.LightningModule):
                     losses[key] = self.all_gather(losses[key]).mean()
 
             if self.global_rank == 0:
-                self.logger.experiment.add_scalar(
-                    "loss", losses["loss"], self.num_samples
-                )
+                self.log("loss", losses["loss"], True)
                 for key in ["vae", "latent", "mmd", "chamfer", "arg_cnt"]:
                     if key in losses:
-                        self.logger.experiment.add_scalar(
-                            f"loss/{key}", losses[key], self.num_samples
-                        )
+                        self.log(f"loss/{key}", losses[key])
 
         return {"loss": loss}
 
@@ -592,9 +588,7 @@ class LitModel(L.LightningModule):
                 conds_std=self.conds_std,
             )
             if self.global_rank == 0:
-                self.logger.experiment.add_scalar(
-                    f"FID{postfix}", score, self.num_samples
-                )
+                self.log(f"FID{postfix}", score, prog_bar=True)
                 if not os.path.exists(self.conf.logdir):
                     os.makedirs(self.conf.logdir)
                 with open(os.path.join(self.conf.logdir, "eval.txt"), "a") as f:
@@ -618,9 +612,7 @@ class LitModel(L.LightningModule):
 
                 if self.global_rank == 0:
                     for key, val in score.items():
-                        self.logger.experiment.add_scalar(
-                            f"{key}{postfix}", val, self.num_samples
-                        )
+                        self.log(f"{key}{postfix}", val)
 
         if (
             self.conf.eval_every_samples > 0
@@ -933,13 +925,26 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None
         os.makedirs(conf.logdir)
 
     print("logdir:", conf.logdir)
+    save_train_steps = conf.save_every_samples // conf.batch_size_effective
+    print("save train steps:", save_train_steps)
+
     checkpoint = ModelCheckpoint(
         monitor="FID",
         dirpath=f"{conf.logdir}",
         save_last=True,
-        save_top_k=3,
-        every_n_train_steps=conf.save_every_samples // conf.batch_size_effective,
+        save_top_k=2,
+        every_n_train_steps=save_train_steps,
         verbose=True,
+        filename="{step:07d}-{FID:.2f}",
+    )
+    checkpoint_ema = ModelCheckpoint(
+        monitor="FID_ema",
+        dirpath=os.path.join(conf.logdir, "ema"),
+        save_last=True,
+        save_top_k=2,
+        every_n_train_steps=save_train_steps,
+        verbose=True,
+        filename="{step:07d}-{FID_ema:.2f}",
     )
     checkpoint_path = f"{conf.logdir}/last.ckpt"
     print("ckpt path:", checkpoint_path)
@@ -953,7 +958,7 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None
         else:
             resume = None
 
-    tb_logger = TensorBoardLogger(save_dir=conf.logdir, name=None, version="")
+    tb_logger = TensorBoardLogger(save_dir=conf.logdir, name=None)
 
     max_steps = conf.total_samples // conf.batch_size_effective
     print("max steps:", max_steps)
@@ -963,6 +968,7 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None
         precision=16 if conf.fp16 else 32,
         callbacks=[
             checkpoint,
+            checkpoint_ema,
             LearningRateMonitor(),
         ],
         # clip in the model instead
