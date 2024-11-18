@@ -6,7 +6,6 @@ sys.path.append(os.getcwd())
 
 import argparse
 import torch
-import numpy as np
 import matplotlib.pyplot as plt
 from templates import *
 from torch.nn import functional as F
@@ -18,46 +17,16 @@ from counterfactuals.utils import (
     expl_to_image,
 )
 from counterfactuals.plot import plot_grid_part
+from dae_counterfactuals.models import DAEModel, RedModel
+
+import json
 
 import matplotlib
-import json
 
 matplotlib.use("Agg")
 matplotlib.rc("text")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
-
-class DAEModel:
-    def __init__(
-        self,
-        forward_t: int = 250,
-        backward_t: int = 20,
-    ):
-        self.model, self.conf = self.load_dae_model()
-
-        self.forward_t = forward_t
-        self.backward_t = backward_t
-
-    def load_dae_model(self):
-        conf = ffhq256_autoenc()
-        model = LitModel(conf)
-        state = torch.load(f"checkpoints/{conf.name}/last.ckpt", map_location="cpu")
-        model.load_state_dict(state["state_dict"], strict=False)
-        model.ema_model.eval()
-        model.ema_model.to(device)
-        return model, conf
-
-    def encode(self, batch: torch.Tensor):
-        batch = batch.to(device)
-        z_sem: torch.Tensor = self.model.encode(batch)
-        xT: torch.Tensor = self.model.encode_stochastic(batch, z_sem, T=self.forward_t)
-        return z_sem, xT
-
-    def decode(self, xT, z_sem) -> torch.Tensor:
-        # TODO: Why is the result so bright?
-        pred = self.model.render(xT, z_sem, T=self.backward_t, grads=True)
-        return pred
 
 
 class DiffeoCF:
@@ -100,7 +69,7 @@ class DiffeoCF:
         target: float,
         image_path: str,
         maximize: bool = True,
-    ) -> None:
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         prepare adversarial attack in X or Z
         run attack
@@ -123,10 +92,10 @@ class DiffeoCF:
         else:
             raise NotImplementedError("Attack style 'x' not implemented yet.")
             # define x as params for derivative wrt x
-            x_org = x.clone()
-            x.requires_grad = True
-            params.append(x)
-            z_sem = None
+            # x_org = x.clone()
+            # x.requires_grad = True
+            # params.append(x)
+            # z_sem = None
 
         print(
             "\nRunning counterfactual search in Z ..."
@@ -169,6 +138,8 @@ class DiffeoCF:
             image_name,
             cmap_img,
         )
+
+        return x_prime, z_sem, xT
 
     def create_heatmap(
         self,
@@ -283,12 +254,6 @@ class DiffeoCF:
         # Assume this is a JointClassifierDDPM to get the non-noised classifier
 
 
-class RedModel(torch.nn.Module):
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Mean red value, assuming x is of shape (N, C, H, W)
-        return x[:, 0].mean(dim=(1, 2))[None]
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run adversarial attack.")
     parser.add_argument(
@@ -396,7 +361,7 @@ if __name__ == "__main__":
         result_dir=args.result_dir,
     )
 
-    diffeo_cf.adv_attack(
+    x_cf, z, xT = diffeo_cf.adv_attack(
         attack_style=args.attack_style,
         num_steps=args.num_steps,
         lr=args.lr,
@@ -409,3 +374,9 @@ if __name__ == "__main__":
     # Save args to a config txt file
     with open(os.path.join(args.result_dir, "diffeocf_last_args.json"), "w") as f:
         json.dump(vars(args), f, indent=2)
+
+    # Save x and z in cwd for later use
+    filename = os.path.basename(args.image_path).split(".")[0]
+    torch.save(x_cf, os.path.join(args.result_dir, f"{filename}_x_cf.pt"))
+    torch.save(z, os.path.join(args.result_dir, f"{filename}_z.pt"))
+    torch.save(xT, os.path.join(args.result_dir, f"{filename}_xT_encoded.pt"))
