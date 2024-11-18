@@ -198,8 +198,11 @@ def basf512_autoenc():
     conf.net_ch_mult = (1, 1, 2, 2, 4, 4)
     conf.net_enc_channel_mult = (1, 1, 2, 2, 4, 4, 4)
 
+    conf.batch_size = 3
+    conf.batch_size_eval = 3
+
     max_epochs = 300
-    conf.total_samples = num_images * max_epochs
+    conf.total_samples = num_images * max_epochs * conf.batch_size
 
     # conf.sample_every_samples = 10
     conf.sample_every_samples = num_images * 10
@@ -210,13 +213,10 @@ def basf512_autoenc():
     conf.eval_ema_every_samples = num_images * 5
     conf.eval_num_images = 12  # int(num_images * 0.01)
     # save model
-    conf.save_every_samples = num_images * 2
-
-    conf.batch_size = 3
-    conf.batch_size_eval = 3
+    conf.save_every_samples = num_images 
 
     conf.work_cache_dir = os.path.join(conf.logdir, "cache")
-    conf.name = "basf512_autoenc"
+    conf.name = "basf512_ddim"
 
     # conf.optimizer = optimizertype.adamw
 

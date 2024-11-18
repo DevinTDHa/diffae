@@ -3,7 +3,6 @@ import sys
 sys.path.append("/home/tha/master-thesis-xai/thesis_utils")
 from templates import *
 from templates_latent import *
-import torch
 import argparse
 
 if __name__ == "__main__":
@@ -12,7 +11,6 @@ if __name__ == "__main__":
         "--max_time", type=str, default="6:23:55:00", help="Maximum training time"
     )
 
-    torch.set_float32_matmul_precision("high")
     # do not run this directly, use `sbatch run_ffhq256.sh` to spawn the srun properly.
     conf = basf512_autoenc()
     args = parser.parse_args()
