@@ -26,6 +26,7 @@ from dae_counterfactuals.models import DAEModel, RedModel
 import json
 
 import matplotlib
+import random
 
 matplotlib.use("Agg")
 matplotlib.rc("text")
@@ -354,13 +355,17 @@ if __name__ == "__main__":
         help="Number of steps for backwards diffusion.",
         required=False,
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Seed for reproducibility.",
+    )
 
     args = parser.parse_args()
     print("Running with args:", args)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    seed_everything(0)
-
     # Load models and data info
     # Load generative model
     gmodel = DAEModel(forward_t=args.forward_t, backward_t=args.backward_t)
@@ -378,6 +383,10 @@ if __name__ == "__main__":
         result_dir=args.result_dir,
         z_sem=torch.load(args.z_sem).to(device),
     )
+
+    # Set a random seed based on the current time or any other varying factor
+    print("Reseeding to:", args.seed)
+    seed_everything(args.seed)
 
     x_cf, z, xT = diffeo_cf.adv_attack(
         attack_style=args.attack_style,
