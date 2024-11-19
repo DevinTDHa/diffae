@@ -33,13 +33,14 @@ matplotlib.rc("text")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-class DiffeoCF:
+class DiffeoCF_fixed_zsem:
     def __init__(
         self,
         gmodel: DAEModel,
         rmodel: torch.nn.Module,
         data_shape: tuple[int, int, int],
         result_dir: str,
+        z_sem: torch.Tensor,
         do_normalize=True,
     ):
         self.gmodel = gmodel
@@ -63,6 +64,7 @@ class DiffeoCF:
 
         self.result_dir = make_dir(result_dir)
         self.steps_dir = make_dir(os.path.join(result_dir, "steps"))
+        self.z_sem = z_sem
 
     def adv_attack(
         self,
@@ -86,13 +88,14 @@ class DiffeoCF:
         params = []
         if attack_style == "z":
             # define z as params for derivative wrt to z
-            z_sem, xT = self.gmodel.encode(x)
-            z_sem.detach()
+            z_sem = self.z_sem.to(device)
             x_org = (x.detach().cpu().clone() + 1) / 2
             z_org = z_sem.clone()
 
             z_sem.requires_grad = True
             params.append(z_sem)
+
+            xT = torch.randn_like(x).to(device).requires_grad_(False)
         else:
             raise NotImplementedError("Attack style 'x' not implemented yet.")
             # define x as params for derivative wrt x
@@ -132,16 +135,17 @@ class DiffeoCF:
 
         # calculate heatmap as difference dx between original and adversarial/counterfactual
         # TODO: dx to original or projection?
-        self.create_heatmap(
-            attack_style,
-            save_at,
-            x_org,
-            xT,
-            z_org,
-            x_prime,
-            image_name,
-            cmap_img,
-        )
+        with torch.no_grad():
+            self.create_heatmap(
+                attack_style,
+                save_at,
+                x_org,
+                xT,
+                z_org,
+                x_prime,
+                image_name,
+                cmap_img,
+            )
 
         return x_prime, z_sem, xT
 
@@ -259,7 +263,9 @@ class DiffeoCF:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run adversarial attack.")
+    parser = argparse.ArgumentParser(
+        description="Run DiffeoCF with a precomputed z_sem. We use random noise."
+    )
     parser.add_argument(
         "--rmodel_path",
         type=str,
@@ -279,12 +285,10 @@ if __name__ == "__main__":
         "--resize", type=int, required=True, help="Target size of the input image."
     )
     parser.add_argument(
-        "--attack_style",
+        "--z_sem",
         type=str,
-        choices=["x", "z"],
-        default="z",
-        help="Attack style: 'x' or 'z'.",
-        required=False,
+        help="Path to the z_sem tensor.",
+        required=True,
     )
     parser.add_argument(
         "--num_steps",
@@ -312,6 +316,14 @@ if __name__ == "__main__":
         type=float,
         help="Target class for the attack.",
         default=1.0,
+        required=False,
+    )
+    parser.add_argument(
+        "--attack_style",
+        type=str,
+        choices=["x", "z"],
+        default="z",
+        help="Attack style: 'x' or 'z'.",
         required=False,
     )
     parser.add_argument(
@@ -359,11 +371,12 @@ if __name__ == "__main__":
     else:
         regressor = load_model(args.rmodel_type, args.rmodel_path).model
 
-    diffeo_cf = DiffeoCF(
+    diffeo_cf = DiffeoCF_fixed_zsem(
         gmodel=gmodel,
         rmodel=regressor,
         data_shape=(3, args.resize, args.resize),
         result_dir=args.result_dir,
+        z_sem=torch.load(args.z_sem).to(device),
     )
 
     x_cf, z, xT = diffeo_cf.adv_attack(
@@ -377,11 +390,13 @@ if __name__ == "__main__":
     )
 
     # Save args to a config txt file
-    with open(os.path.join(args.result_dir, "diffeocf_last_args.json"), "w") as f:
+    filename = os.path.basename(args.image_path).split(".")[0]
+    with open(
+        os.path.join(args.result_dir, f"diffeocf_{filename}_args.json"), "w"
+    ) as f:
         json.dump(vars(args), f, indent=2)
 
     # Save x and z in cwd for later use
-    filename = os.path.basename(args.image_path).split(".")[0]
-    torch.save(x_cf, os.path.join(args.result_dir, f"{filename}_x_cf.pt"))
-    torch.save(z, os.path.join(args.result_dir, f"{filename}_z.pt"))
-    torch.save(xT, os.path.join(args.result_dir, f"{filename}_xT_encoded.pt"))
+    # torch.save(x_cf, os.path.join(args.result_dir, f"{filename}_x_cf.pt"))
+    # torch.save(z, os.path.join(args.result_dir, f"{filename}_z.pt"))
+    # torch.save(xT, os.path.join(args.result_dir, f"{filename}_xT_encoded.pt"))
