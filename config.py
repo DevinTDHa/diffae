@@ -310,6 +310,9 @@ class TrainConfig(BaseConfig):
         elif self.data_name == "basf512":
             # Construct transforms for DDPM
             transform = [
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(360),
                 transforms.Resize(self.img_size),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),

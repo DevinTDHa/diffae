@@ -643,6 +643,7 @@ class LitModel(L.LightningModule):
 
     def configure_optimizers(self):
         out = {}
+        print(f"Optimizer {self.conf.optimizer} with lr {self.conf.lr}")
         if self.conf.optimizer == OptimizerType.adam:
             optim = torch.optim.Adam(
                 self.model.parameters(),
@@ -919,7 +920,16 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None
     print("conf:", conf)
     # assert not (conf.fp16 and conf.grad_clip > 0
     #             ), 'pytorch lightning has bug with amp + gradient clipping'
-    model = LitModel(conf)
+    checkpoint_path = f"{conf.logdir}/last.ckpt"
+    print("ckpt path:", checkpoint_path)
+    if os.path.exists(checkpoint_path):
+        print("Resuming from checkpoint!")
+        model = LitModel.load_from_checkpoint(checkpoint_path, conf=conf)
+        # reconfigure optimizers
+        model.configure_optimizers()
+    else:
+        model = LitModel(conf)
+
 
     if not os.path.exists(conf.logdir):
         os.makedirs(conf.logdir)
@@ -946,17 +956,6 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None
         verbose=True,
         filename="{step:07d}-{FID_ema:.2f}",
     )
-    checkpoint_path = f"{conf.logdir}/last.ckpt"
-    print("ckpt path:", checkpoint_path)
-    if os.path.exists(checkpoint_path):
-        resume = checkpoint_path
-        print("resume!")
-    else:
-        if conf.continue_from is not None:
-            # continue from a checkpoint
-            resume = conf.continue_from.path
-        else:
-            resume = None
 
     tb_logger = TensorBoardLogger(save_dir=conf.logdir, name=None)
 
@@ -980,7 +979,7 @@ def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None
     )
 
     if mode == "train":
-        trainer.fit(model, ckpt_path=resume)
+        trainer.fit(model)
     elif mode == "eval":
         # load the latest checkpoint
         # perform lpips
