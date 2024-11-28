@@ -342,12 +342,17 @@ if __name__ == "__main__":
         help="Number of steps for backwards diffusion.",
         required=False,
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Seed for reproducibility.",
+    )
 
     args = parser.parse_args()
     print("Running with args:", args)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    seed_everything(0)
 
     # Load models and data info
     # Load generative model
@@ -366,6 +371,10 @@ if __name__ == "__main__":
         result_dir=args.result_dir,
     )
 
+    # Set a random seed based on the current time or any other varying factor
+    print("Reseeding to:", args.seed)
+    seed_everything(args.seed)
+
     x_cf, z, xT = diffeo_cf.adv_attack(
         attack_style=args.attack_style,
         num_steps=args.num_steps,
@@ -382,6 +391,7 @@ if __name__ == "__main__":
 
     # Save x and z in cwd for later use
     filename = os.path.basename(args.image_path).split(".")[0]
+    save_img_threaded(x_cf, os.path.join(args.result_dir, f"{filename}_x_cf.png"))
     torch.save(x_cf, os.path.join(args.result_dir, f"{filename}_x_cf.pt"))
     torch.save(z, os.path.join(args.result_dir, f"{filename}_z.pt"))
     torch.save(xT, os.path.join(args.result_dir, f"{filename}_xT_encoded.pt"))

@@ -179,5 +179,10 @@ cython_debug/
 .idea/
 .vscode/
 
-# Images
+# Images, Cache and Logs
 *.png
+*.json
+*.pt
+*.txt
+*.out
+*.pickle

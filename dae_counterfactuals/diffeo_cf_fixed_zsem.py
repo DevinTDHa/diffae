@@ -406,6 +406,7 @@ if __name__ == "__main__":
         json.dump(vars(args), f, indent=2)
 
     # Save x and z in cwd for later use
+    save_img_threaded(x_cf, os.path.join(args.result_dir, f"{filename}_x_cf.png"))
     # torch.save(x_cf, os.path.join(args.result_dir, f"{filename}_x_cf.pt"))
     # torch.save(z, os.path.join(args.result_dir, f"{filename}_z.pt"))
     # torch.save(xT, os.path.join(args.result_dir, f"{filename}_xT_encoded.pt"))
