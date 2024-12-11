@@ -916,20 +916,25 @@ def is_time(num_samples, every, step_size):
     return num_samples - closest < step_size
 
 
-def train(conf: TrainConfig, gpus=0, nodes=1, mode: str = "train", max_time=None):
+def train(
+    conf: TrainConfig,
+    nodes=1,
+    mode: str = "train",
+    max_time=None,
+    checkpoint_name="last.ckpt",
+):
     print("conf:", conf)
     # assert not (conf.fp16 and conf.grad_clip > 0
     #             ), 'pytorch lightning has bug with amp + gradient clipping'
-    checkpoint_path = f"{conf.logdir}/last.ckpt"
+    checkpoint_path = (
+        f"{conf.logdir}/{checkpoint_name}" if not conf.pretrain else conf.pretrain.path
+    )
     print("ckpt path:", checkpoint_path)
     if os.path.exists(checkpoint_path):
         print("Resuming from checkpoint!")
         model = LitModel.load_from_checkpoint(checkpoint_path, conf=conf)
-        # reconfigure optimizers
-        model.configure_optimizers()
     else:
         model = LitModel(conf)
-
 
     if not os.path.exists(conf.logdir):
         os.makedirs(conf.logdir)

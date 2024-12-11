@@ -101,6 +101,62 @@ def celeba64d2c_autoenc():
     return conf
 
 
+def square64_autoenc():
+    conf = ffhq64_autoenc()
+    conf.data_name = "square64"
+
+    num_images = 16_000
+    conf.batch_size = 24
+    conf.batch_size_eval = 24
+
+    max_epochs = 1000
+    conf.total_samples = num_images * max_epochs * conf.batch_size
+
+    # conf.sample_every_samples = 10
+    conf.sample_every_samples = num_images * 10
+    conf.sample_size = conf.batch_size
+    # conf.eval_every_samples = 10
+    conf.eval_every_samples = num_images * 5
+    # conf.eval_ema_every_samples = 10
+    conf.eval_ema_every_samples = num_images * 5
+    conf.eval_num_images = conf.batch_size  # int(num_images * 0.01)
+    # save model
+    conf.save_every_samples = num_images
+
+    conf.work_cache_dir = os.path.join(conf.logdir, "cache_square64")
+    conf.name = "square64_ddim"
+
+    conf.make_model_conf()
+    return conf
+
+
+def square64_autoenc_test():
+    conf = ffhq64_autoenc()
+    conf.data_name = "square64"
+
+    conf.batch_size = 24
+    conf.batch_size_eval = 24
+
+    conf.total_samples = conf.batch_size * 2
+
+    # conf.sample_every_samples = 10
+    conf.sample_every_samples = 1
+    conf.sample_size = 1
+    # conf.eval_every_samples = 10
+    conf.eval_every_samples = 1
+    # conf.eval_ema_every_samples = 10
+    conf.eval_ema_every_samples = 1
+    conf.eval_num_images = conf.batch_size
+    # save model
+    conf.save_every_samples = conf.batch_size
+
+    conf.work_cache_dir = os.path.join(conf.logdir, "cache_square64")
+    conf.name = "square64_ddim"
+
+    conf.make_model_conf()
+    return conf
+
+
 def ffhq128_ddpm():
     conf = ddpm()
     conf.data_name = "ffhqlmdb256"
@@ -163,7 +219,7 @@ def basf512_autoenc_test():
 
     conf.batch_size = 3
     conf.batch_size_eval = 3
-    
+
     num_images = 10  # basf dataset has 2860 images
     max_epochs = 3
     conf.total_samples = num_images * max_epochs * conf.batch_size
@@ -179,8 +235,7 @@ def basf512_autoenc_test():
     # save model
     conf.save_every_samples = num_images * 2
 
-
-    conf.work_cache_dir = os.path.join(conf.logdir, "cache")
+    conf.work_cache_dir = os.path.join(conf.logdir, "cache_basf512")
     conf.name = "basf512_autoenc_test"
 
     # conf.optimizer = optimizertype.adamw
@@ -213,9 +268,9 @@ def basf512_autoenc():
     conf.eval_ema_every_samples = num_images * 5
     conf.eval_num_images = 12  # int(num_images * 0.01)
     # save model
-    conf.save_every_samples = num_images 
+    conf.save_every_samples = num_images
 
-    conf.work_cache_dir = os.path.join(conf.logdir, "cache")
+    conf.work_cache_dir = os.path.join(conf.logdir, "cache_basf512")
     conf.name = "basf512_ddim"
 
     # conf.optimizer = optimizertype.adamw
@@ -311,6 +366,15 @@ def bedroom128_autoenc():
     return conf
 
 
+def ffhq64_ddpm():
+    conf = ddpm()
+    conf.data_name = "ffhqlmdb256"
+    conf.warmup = 0
+    conf.total_samples = 72_000_000
+    conf.scale_up_gpus(4)
+    return conf
+
+
 def pretrain_celeba64d2c_72M():
     conf = celeba64d2c_autoenc()
     conf.pretrain = PretrainConfig(
@@ -318,6 +382,26 @@ def pretrain_celeba64d2c_72M():
         path=f"checkpoints/{celeba64d2c_autoenc().name}/last.ckpt",
     )
     conf.latent_infer_path = f"checkpoints/{celeba64d2c_autoenc().name}/latent.pkl"
+    return conf
+
+
+def pretrain_square64():
+    conf = square64_autoenc()
+    conf.pretrain = PretrainConfig(
+        name="16M",  # 16K images * 1000 epochs
+        path=f"checkpoints/{conf.name}/last.ckpt",
+    )
+    conf.latent_infer_path = f"checkpoints/{conf.name}/latent.pkl"
+    return conf
+
+
+def pretrain_square64_test():
+    conf = square64_autoenc_test()
+    conf.pretrain = PretrainConfig(
+        name="16M",  # 16K images * 1000 epochs
+        path=f"checkpoints/{conf.name}/last.ckpt",
+    )
+    conf.latent_infer_path = f"checkpoints/{conf.name}/latent.pkl"
     return conf
 
 
