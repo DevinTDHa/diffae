@@ -926,15 +926,27 @@ def train(
     print("conf:", conf)
     # assert not (conf.fp16 and conf.grad_clip > 0
     #             ), 'pytorch lightning has bug with amp + gradient clipping'
+
+    # If we are not using latent diffusion, we can use strict loading
+    # Otherwise we init an untrained latent model and train it now
+    strict_loading = not conf.train_mode is TrainMode.latent_diffusion
     checkpoint_path = (
         f"{conf.logdir}/{checkpoint_name}" if not conf.pretrain else conf.pretrain.path
     )
     print("ckpt path:", checkpoint_path)
     if os.path.exists(checkpoint_path):
-        print("Resuming from checkpoint!")
-        model = LitModel.load_from_checkpoint(checkpoint_path, conf=conf)
+        resume = checkpoint_path
+        print("resume!")
+        model = LitModel.load_from_checkpoint(resume, conf=conf, strict=strict_loading)
     else:
-        model = LitModel(conf)
+        if conf.continue_from is not None:
+            # continue from a checkpoint
+            resume = conf.continue_from.path
+            model = LitModel.load_from_checkpoint(
+                resume, conf=conf, strict=strict_loading
+            )
+        else:
+            model = LitModel(conf=conf)
 
     if not os.path.exists(conf.logdir):
         os.makedirs(conf.logdir)

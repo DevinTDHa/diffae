@@ -396,7 +396,7 @@ def pretrain_square64():
 
 
 def pretrain_square64_test():
-    conf = square64_autoenc_test()
+    conf = square64_autoenc()
     conf.pretrain = PretrainConfig(
         name="16M",  # 16K images * 1000 epochs
         path=f"checkpoints/{conf.name}/last.ckpt",

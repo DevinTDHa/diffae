@@ -6,14 +6,12 @@ if __name__ == "__main__":
 
     # infer the latents for training the latent DPM
     # NOTE: not gpu heavy, but more gpus can be of use!
-    gpus = [0]
-    # gpus = [0, 1, 2, 3]
     conf = basf512_autoenc()
     conf.eval_programs = ["infer"]
-    train(conf, gpus=gpus, mode="eval")  # DHA: Assume pretrained. The model is loaded in eval mode.
+    # DHA: Assume pretrained. The model is loaded in eval mode.
+    train(conf, mode="eval")
 
     # train the latent DPM
     # NOTE: only need a single gpu
-    gpus = [0]
     conf = basf512_autoenc_latent()
-    train(conf, gpus=gpus)
+    train(conf)

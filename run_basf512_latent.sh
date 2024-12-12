@@ -13,4 +13,4 @@ export PYTHONFAULTHANDLER=1
 apptainer run \
     -B /home/tha/datasets/squashed/basf_resize512.sqfs:/data/basf:image-src=/ \
     --nv /home/tha/apptainers/thesis.sif \
-    python run_basf512.py --max_time="6:23:55:00"
+    python run_basf512_latent.py 

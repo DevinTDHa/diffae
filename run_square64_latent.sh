@@ -1,6 +1,6 @@
 #!/bin/sh
-#SBATCH --job-name=dae_basf512
-#SBATCH --partition=gpu-7d
+#SBATCH --job-name=dae_square_latent
+#SBATCH --partition=gpu-2d
 #SBATCH --constraint=80gb
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=2
@@ -11,6 +11,6 @@ export NCCL_DEBUG=INFO
 export PYTHONFAULTHANDLER=1
 
 apptainer run \
-    -B /home/tha/datasets/squashed/basf_resize512.sqfs:/data/basf:image-src=/ \
+    -B /home/tha/datasets/squashed/square3.sqfs:/data/square3:image-src=/ \
     --nv /home/tha/apptainers/thesis.sif \
-    python run_basf512.py --max_time="6:23:55:00"
+    python run_square64_latent.py
