@@ -116,6 +116,9 @@ def basf512_autoenc_latent():
     conf = latent_256_batch_size(conf)  # Batch Size 256
     conf = adamw_weight_decay(conf)
 
+    conf.batch_size = 8
+    conf.batch_size_eval = 8
+
     num_images = 2859  # basf dataset has 2860 imagese
 
     conf.total_samples = num_images * 1000  # 1000 epochs
@@ -124,6 +127,8 @@ def basf512_autoenc_latent():
     conf.eval_ema_every_samples = num_images * 10
     conf.eval_every_samples = num_images * 10
     conf.sample_every_samples = num_images * 10
+    conf.save_every_samples = num_images * 10
+    
     conf.name = "basf512_autoenc_latent"
     return conf
 
