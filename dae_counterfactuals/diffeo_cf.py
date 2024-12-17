@@ -13,7 +13,7 @@ import torch
 import matplotlib.pyplot as plt
 from templates import *
 from torch.nn import functional as F
-from thesis_utils.models import load_model
+from thesis_utils.models import load_resnet
 from thesis_utils.file_utils import save_img_threaded
 from counterfactuals.utils import (
     make_dir,
@@ -267,12 +267,6 @@ if __name__ == "__main__":
         help="Path to the regression model.",
     )
     parser.add_argument(
-        "--rmodel_type",
-        type=str,
-        required=True,
-        help="Type to the regression model.",
-    )
-    parser.add_argument(
         "--image_path", type=str, required=True, help="Path to the input image."
     )
     parser.add_argument(
@@ -359,10 +353,7 @@ if __name__ == "__main__":
     gmodel = DAEModel(forward_t=args.forward_t, backward_t=args.backward_t)
 
     # Load regression model
-    if args.rmodel_type.lower() == "red":
-        regressor = RedModel()
-    else:
-        regressor = load_model(args.rmodel_type, args.rmodel_path).model
+    regressor = load_resnet(args.rmodel_path)
 
     diffeo_cf = DiffeoCF(
         gmodel=gmodel,
