@@ -1,6 +1,5 @@
 import sys
 
-sys.path.append("/home/tha/master-thesis-xai/thesis_utils")
 from templates import *
 from templates_latent import *
 import argparse

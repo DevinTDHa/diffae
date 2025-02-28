@@ -23,8 +23,8 @@ import os
 from dataset_util import *
 from torch.utils.data.distributed import DistributedSampler
 
-from thesis_utils.basf_dataset import BASFDataset
-from thesis_utils.squares_dataset import SquaresDataset
+from diff_cf_ir.basf_dataset import BASFDataset
+from diff_cf_ir.squares_dataset import SquaresDataset
 
 data_paths = {
     "ffhqlmdb256": os.path.expanduser("datasets/ffhq256.lmdb"),

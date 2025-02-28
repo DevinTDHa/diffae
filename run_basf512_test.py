@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("/home/tha/master-thesis-xai/thesis_utils")
+sys.path.append("/home/tha/master-thesis-xai/diff_cf_ir")
 from templates import *
 from templates_latent import *
 import torch
