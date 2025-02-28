@@ -4,7 +4,7 @@
 #SBATCH --constraint=80gb
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=2
-#SBATCH --output=logs/job-%j.out
+#SBATCH --output=logs/job-%x-%j.out
 #SBATCH --chdir=/home/tha/diffae
 
 export NCCL_DEBUG=INFO

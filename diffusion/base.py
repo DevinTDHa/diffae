@@ -231,6 +231,7 @@ class GaussianDiffusionBeatGans:
             )
         else:
             raise NotImplementedError()
+    # Set a random seed based on the current time or any other varying factor
 
     def q_mean_variance(self, x_start, t):
         """

@@ -19,6 +19,7 @@ from torchvision.utils import make_grid, save_image
 
 from config import *
 from dataset import *
+from diffusion.diffusion import SpacedDiffusionBeatGans
 from dist_utils import *
 from lmdb_writer import *
 from metrics import *
@@ -46,7 +47,7 @@ class LitModel(L.LightningModule):
             model_size += param.data.nelement()
         print("Model params: %.2f M" % (model_size / 1024 / 1024))
 
-        self.sampler = conf.make_diffusion_conf().make_sampler()
+        self.sampler: SpacedDiffusionBeatGans = conf.make_diffusion_conf().make_sampler()
         self.eval_sampler = conf.make_eval_diffusion_conf().make_sampler()
 
         # this is shared for both model and latent

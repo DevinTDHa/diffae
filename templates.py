@@ -156,6 +156,28 @@ def square64_autoenc_test():
     conf.make_model_conf()
     return conf
 
+def retina128_autoenc_base():
+    """Creates a configuration for a model that uses for retinaMNIST 128x128.
+
+    Taken from https://github.com/matanat/dae_counterfactual/blob/main/templates.py
+    """
+    conf = autoenc_base()
+    conf.data_name = 'retina128'
+    conf.dataset_img_key = 0
+    conf.scale_up_gpus(4)
+    conf.batch_size = 8
+    conf.img_size = 128
+    conf.net_ch = 128
+    # final resolution = 8x8
+    conf.net_ch_mult = (1, 1, 2, 3, 4)
+    # final resolution = 4x4
+    conf.net_enc_channel_mult = (1, 1, 2, 3, 4, 4)
+    conf.eval_ema_every_samples = 10_000_000
+    conf.eval_every_samples = 10_000_000
+    conf.dataset_img_key = 0
+    conf.make_model_conf()
+    return conf
+
 
 def ffhq128_ddpm():
     conf = ddpm()
